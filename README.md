@@ -6,6 +6,7 @@
 
 ## 🚀 Demo
 
+**URL:** https://ai-notes-assistant-cursor-claude.vercel.app  
 **Stack:** Next.js · Supabase · OpenAI · Vercel  
 **Repo:** `theduodecim/ai-notes-assistant-cursor-claude`
 
@@ -14,10 +15,11 @@
 ## ✨ Funcionalidades
 
 - 🔐 Auth completo — registro, login, logout, confirmación por email
+- 🔑 Reset de contraseña — flujo completo con email (PKCE flow)
 - 🛡️ Dashboard protegido — rutas privadas con middleware
 - 📝 CRUD de notas — crear, editar, eliminar
+- ✅ Validaciones en formularios — login y notas con mensajes de error inline
 - 🤖 IA integrada — resumir, mejorar redacción, convertir en action items *(próximo)*
-- ☁️ Deploy real en Vercel *(próximo)*
 
 ---
 
@@ -29,7 +31,7 @@
 | TypeScript | Tipado |
 | Tailwind CSS v4 | Estilos |
 | Supabase | Auth + Base de datos (PostgreSQL) |
-| OpenAI | Funciones de IA |
+| OpenAI | Funciones de IA *(próximo)* |
 | GitHub Codespaces | Entorno cloud de desarrollo |
 | Cursor | IDE con IA |
 | Vercel | Deploy |
@@ -86,66 +88,43 @@ Abrir [http://localhost:3000](http://localhost:3000)
 src/
   app/
     auth/
-      actions.ts          # login, signUp, logout
-      confirm/            # confirmación de email
+      actions.ts              # login, signUp, logout, forgotPassword, updatePassword
+      callback/
+        route.ts              # Intercambia code PKCE por sesión
+      confirm/
+        route.ts              # Confirmación de email (token_hash)
+        page.tsx              # Manejo de hash tokens (#access_token)
+      reset-password/
+        page.tsx              # Formulario de nueva contraseña
     dashboard/
-      actions.ts          # CRUD de notas
-      page.tsx            # Dashboard principal
+      actions.ts              # CRUD de notas
+      page.tsx                # Dashboard principal
     login/
-      page.tsx            # Login y registro
+      page.tsx                # Login y registro
     layout.tsx
     page.tsx
     globals.css
   components/
+    auth-form.tsx             # Formulario de login/registro + olvidé contraseña
+    logout-button.tsx
     notes/
       create-note-form.tsx
       note-card.tsx
+      note-edit-form.tsx
+      note-form-fields.tsx
       notes-list.tsx
   lib/
+    notes-validation.ts       # Validaciones compartidas (título y contenido)
     supabase/
-      client.ts           # Cliente browser
-      server.ts           # Server Components
-      admin.ts            # Service role
-      middleware.ts       # Sesión y rutas protegidas
+      client.ts               # Cliente browser
+      server.ts               # Server Components
+      admin.ts                # Service role
+      session.ts              # Middleware de sesión
   types/
     note.ts
 supabase/
   migrations/
-    001_notes.sql         # Tabla notes + RLS
-```
-
----
-
-## 🤖 Prompts usados en Cursor Agent
-
-### Inicializar Next.js
-```
-Quiero construir una mini app SaaS con IA llamada AI Notes Assistant.
-
-Stack: Next.js con TypeScript y Tailwind, Supabase para auth y base de datos, OpenAI para IA, Deploy en Vercel.
-
-Empezá por inicializar el proyecto Next.js en la carpeta actual con TypeScript, Tailwind, ESLint, App Router y src directory.
-```
-
-### Configurar Supabase + Auth
-```
-Configurá Supabase en el proyecto. Necesito:
-1. Instalar @supabase/supabase-js y @supabase/ssr
-2. Crear el cliente de Supabase para client y server
-3. Auth completo con login/registro con email y password
-4. Middleware para proteger rutas del dashboard
-5. Página de login en /login
-6. Dashboard protegido en /dashboard
-7. Botón de logout
-```
-
-### CRUD de notas
-```
-Ahora construí el CRUD completo de notas. Necesito:
-1. Tabla "notes" en Supabase con campos: id, user_id, title, content, created_at, updated_at
-2. RLS activado (cada usuario solo ve sus propias notas)
-3. En el dashboard: lista de notas, formulario para crear nota, editar y eliminar
-4. Diseño limpio con Tailwind
+    001_notes.sql             # Tabla notes + RLS
 ```
 
 ---
@@ -156,8 +135,10 @@ Ahora construí el CRUD completo de notas. Necesito:
 - [x] Next.js + TypeScript + Tailwind
 - [x] Supabase auth completo
 - [x] CRUD de notas con RLS
+- [x] Validaciones en formularios
+- [x] Reset de contraseña
+- [x] Deploy en Vercel
 - [ ] Integración OpenAI (resumir, mejorar redacción, action items)
-- [ ] Deploy en Vercel
 
 ---
 
@@ -172,5 +153,5 @@ Cursor Desktop conectado via SSH
     ↓
 Cursor Agent (IA)
     ↓
-Deploy en Vercel
+Deploy automático en Vercel
 ```
