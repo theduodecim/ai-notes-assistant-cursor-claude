@@ -1,14 +1,8 @@
 "use client";
 
+import { startTransition, useActionState, useEffect, useState } from "react";
 import {
-  startTransition,
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  createNote,
+  updateNote,
   type NoteActionState,
 } from "@/app/dashboard/actions";
 import { NoteFormFields } from "@/components/notes/note-form-fields";
@@ -20,6 +14,7 @@ import {
   validateNoteTitle,
   type NoteFieldErrors,
 } from "@/lib/notes-validation";
+import type { Note } from "@/types/note";
 
 const initialState: NoteActionState = {};
 
@@ -28,21 +23,23 @@ type TouchedFields = {
   content: boolean;
 };
 
-export function CreateNoteForm() {
-  const [state, formAction, pending] = useActionState(createNote, initialState);
+type NoteEditFormProps = {
+  note: Note;
+  onCancel: () => void;
+  onSaved: () => void;
+};
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+export function NoteEditForm({ note, onCancel, onSaved }: NoteEditFormProps) {
+  const [state, formAction, pending] = useActionState(updateNote, initialState);
+
+  const [title, setTitle] = useState(note.title);
+  const [content, setContent] = useState(note.content);
   const [fieldErrors, setFieldErrors] = useState<NoteFieldErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({
     title: false,
     content: false,
   });
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-
-  const prevPendingRef = useRef(false);
-  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showTitleError = touched.title || attemptedSubmit;
   const showContentError = touched.content || attemptedSubmit;
@@ -50,40 +47,11 @@ export function CreateNoteForm() {
     validateNoteFields(title, content),
   );
 
-  function clearSuccessTimeout() {
-    if (successTimeoutRef.current) {
-      clearTimeout(successTimeoutRef.current);
-      successTimeoutRef.current = null;
-    }
-  }
-
-  function dismissSuccessMessage() {
-    clearSuccessTimeout();
-    setShowSuccessMessage(false);
-  }
-
   useEffect(() => {
-    const justFinished = prevPendingRef.current && !pending && state.success;
-
-    if (justFinished) {
-      setTitle("");
-      setContent("");
-      setFieldErrors({});
-      setTouched({ title: false, content: false });
-      setAttemptedSubmit(false);
-      setShowSuccessMessage(true);
-
-      clearSuccessTimeout();
-      successTimeoutRef.current = setTimeout(() => {
-        setShowSuccessMessage(false);
-        successTimeoutRef.current = null;
-      }, 3000);
+    if (state.success) {
+      onSaved();
     }
-
-    prevPendingRef.current = pending;
-  }, [pending, state.success]);
-
-  useEffect(() => () => clearSuccessTimeout(), []);
+  }, [state.success, onSaved]);
 
   function handleTitleBlur() {
     setTouched((prev) => ({ ...prev, title: true }));
@@ -102,7 +70,6 @@ export function CreateNoteForm() {
   }
 
   function handleTitleChange(value: string) {
-    dismissSuccessMessage();
     setTitle(value);
     if (showTitleError) {
       setFieldErrors((prev) => ({
@@ -120,29 +87,24 @@ export function CreateNoteForm() {
   }
 
   function handleContentChange(value: string) {
-    dismissSuccessMessage();
     setContent(value);
-    setFieldErrors((prev) => {
-      if (!showContentError && !prev.content) {
-        return prev;
-      }
-
-      const contentError = validateNoteContent(value);
-      const next = { ...prev };
-
-      if (contentError) {
-        next.content = contentError;
-      } else {
+    if (showContentError) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        content: validateNoteContent(value),
+      }));
+    } else {
+      setFieldErrors((prev) => {
+        if (!prev.content) return prev;
+        const next = { ...prev };
         delete next.content;
-      }
-
-      return next;
-    });
+        return next;
+      });
+    }
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    dismissSuccessMessage();
     setAttemptedSubmit(true);
     setTouched({ title: true, content: true });
 
@@ -154,6 +116,7 @@ export function CreateNoteForm() {
     }
 
     const formData = new FormData();
+    formData.set("id", note.id);
     formData.set("title", title.trim());
     formData.set("content", normalizeNoteContent(content).trim());
 
@@ -163,14 +126,10 @@ export function CreateNoteForm() {
   }
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        Nueva nota
-      </h2>
-
-      <form noValidate onSubmit={handleSubmit} className="mt-4 space-y-4">
+    <article className="rounded-xl border border-zinc-300 bg-white p-5 shadow-sm ring-2 ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-zinc-700">
+      <form noValidate onSubmit={handleSubmit} className="space-y-4">
         <NoteFormFields
-          idPrefix="create"
+          idPrefix={`edit-${note.id}`}
           title={title}
           content={content}
           fieldErrors={fieldErrors}
@@ -188,20 +147,23 @@ export function CreateNoteForm() {
           </p>
         ) : null}
 
-        {showSuccessMessage ? (
-          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-            Nota creada.
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={pending || hasValidationErrors}
-          className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          {pending ? "Guardando…" : "Crear nota"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={pending || hasValidationErrors}
+            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            {pending ? "Guardando…" : "Guardar"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Cancelar
+          </button>
+        </div>
       </form>
-    </section>
+    </article>
   );
 }

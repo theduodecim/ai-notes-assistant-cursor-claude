@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  hasNoteFieldErrors,
+  normalizeNoteContent,
+  validateNoteFields,
+} from "@/lib/notes-validation";
 
 export type NoteActionState = {
   error?: string;
@@ -10,8 +15,18 @@ export type NoteActionState = {
 
 function getNoteFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
-  const content = String(formData.get("content") ?? "").trim();
+  const content = normalizeNoteContent(
+    String(formData.get("content") ?? ""),
+  ).trim();
   return { title, content };
+}
+
+function getServerValidationError(title: string, content: string) {
+  const errors = validateNoteFields(title, content);
+  if (!hasNoteFieldErrors(errors)) {
+    return null;
+  }
+  return errors.title ?? errors.content ?? "Revisá los campos del formulario.";
 }
 
 export async function createNote(
@@ -20,8 +35,9 @@ export async function createNote(
 ): Promise<NoteActionState> {
   const { title, content } = getNoteFields(formData);
 
-  if (!title) {
-    return { error: "El título es obligatorio." };
+  const validationError = getServerValidationError(title, content);
+  if (validationError) {
+    return { error: validationError };
   }
 
   const supabase = await createClient();
@@ -58,8 +74,9 @@ export async function updateNote(
     return { error: "Nota no encontrada." };
   }
 
-  if (!title) {
-    return { error: "El título es obligatorio." };
+  const validationError = getServerValidationError(title, content);
+  if (validationError) {
+    return { error: validationError };
   }
 
   const supabase = await createClient();

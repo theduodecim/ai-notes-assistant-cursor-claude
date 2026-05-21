@@ -54,8 +54,8 @@ export async function signUp(
     return { error: "Email y contraseña son obligatorios." };
   }
 
-  if (password.length < 6) {
-    return { error: "La contraseña debe tener al menos 6 caracteres." };
+  if (password.length < 8) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
   }
 
   const supabase = await createClient();
@@ -81,6 +81,19 @@ export async function signUp(
 
   revalidatePath("/", "layout");
   redirect("/dashboard");
+}
+
+export async function authenticate(
+  prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const mode = String(formData.get("mode") ?? "login");
+
+  if (mode === "signup") {
+    return signUp(prevState, formData);
+  }
+
+  return login(prevState, formData);
 }
 
 export async function logout() {

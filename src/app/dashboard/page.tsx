@@ -47,9 +47,9 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto max-w-6xl overflow-hidden">
         {error ? (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+          <div className="mx-6 mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
             No se pudieron cargar las notas. Ejecutá la migración SQL en
             Supabase (
             <code className="text-xs">supabase/migrations/001_notes.sql</code>
@@ -57,12 +57,12 @@ export default async function DashboardPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:items-start">
-          <aside className="lg:sticky lg:top-8">
+        <div className="flex flex-row gap-6 p-6">
+          <aside className="w-80 shrink-0 overflow-hidden">
             <CreateNoteForm />
           </aside>
 
-          <section>
+          <section className="min-w-0 flex-1 overflow-hidden">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 Tus notas
