@@ -1,65 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useActionState } from "react";
+import {
+  updatePassword,
+  type AuthActionState,
+} from "@/app/auth/actions";
 
-type FormStatus = "idle" | "submitting" | "success" | "error";
+const initialState: AuthActionState = {};
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [status, setStatus] = useState<FormStatus>("idle");
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    if (status !== "success") {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      router.push("/dashboard");
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [status, router]);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-
-    if (password.length < 8) {
-      setStatus("error");
-      setMessage("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setStatus("error");
-      setMessage("Las contraseñas no coinciden.");
-      return;
-    }
-
-    setStatus("submitting");
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      setStatus("error");
-      setMessage(
-        error.message.includes("session")
-          ? "Tu sesión expiró. Pedí un nuevo enlace de recuperación."
-          : error.message,
-      );
-      return;
-    }
-
-    setStatus("success");
-    setMessage("Contraseña actualizada.");
-  }
+  const [state, formAction, pending] = useActionState(
+    updatePassword,
+    initialState,
+  );
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
@@ -83,7 +37,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <form
-          onSubmit={handleSubmit}
+          action={formAction}
           className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="space-y-2">
@@ -100,8 +54,6 @@ export default function ResetPasswordPage() {
               autoComplete="new-password"
               required
               minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
               placeholder="••••••••"
             />
@@ -109,47 +61,35 @@ export default function ResetPasswordPage() {
 
           <div className="space-y-2">
             <label
-              htmlFor="confirm-password"
+              htmlFor="confirm"
               className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
               Confirmar contraseña
             </label>
             <input
-              id="confirm-password"
-              name="confirmPassword"
+              id="confirm"
+              name="confirm"
               type="password"
               autoComplete="new-password"
               required
               minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
               placeholder="••••••••"
             />
           </div>
 
-          {message ? (
-            <p
-              className={`rounded-lg px-3 py-2 text-sm ${
-                status === "success"
-                  ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-                  : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300"
-              }`}
-            >
-              {message}
+          {state.error ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
+              {state.error}
             </p>
           ) : null}
 
           <button
             type="submit"
-            disabled={status === "submitting" || status === "success"}
+            disabled={pending}
             className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
-            {status === "submitting"
-              ? "Guardando…"
-              : status === "success"
-                ? "Redirigiendo…"
-                : "Actualizar contraseña"}
+            {pending ? "Guardando…" : "Actualizar contraseña"}
           </button>
         </form>
 

@@ -110,7 +110,7 @@ export async function forgotPassword(
   const origin = await getSiteOrigin();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm`,
+    redirectTo: `${origin}/auth/callback?next=/auth/reset-password`,
   });
 
   if (error) {
@@ -118,6 +118,31 @@ export async function forgotPassword(
   }
 
   return { message: "Revisá tu email para resetear tu contraseña." };
+}
+
+export async function updatePassword(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 8) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+
+  if (password !== confirm) {
+    return { error: "Las contraseñas no coinciden." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/dashboard");
 }
 
 export async function logout() {

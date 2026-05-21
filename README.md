@@ -64,7 +64,14 @@ Correr el SQL en Supabase → SQL Editor:
 cat supabase/migrations/001_notes.sql
 ```
 
-### 5. Correr en desarrollo
+### 5. URLs en Supabase (Authentication → URL Configuration)
+Agregar a **Redirect URLs**:
+- `http://localhost:3000/auth/callback`
+- `https://ai-notes-assistant-cursor-claude.vercel.app/auth/callback`
+
+El reset de contraseña usa `/auth/callback?next=/auth/reset-password` para intercambiar el `code` por sesión.
+
+### 6. Correr en desarrollo
 ```bash
 npm run dev
 ```
