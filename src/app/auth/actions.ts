@@ -96,6 +96,30 @@ export async function authenticate(
   return login(prevState, formData);
 }
 
+export async function forgotPassword(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    return { error: "El email es obligatorio." };
+  }
+
+  const supabase = await createClient();
+  const origin = await getSiteOrigin();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm`,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { message: "Revisá tu email para resetear tu contraseña." };
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
