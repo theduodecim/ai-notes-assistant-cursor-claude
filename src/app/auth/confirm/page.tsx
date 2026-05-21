@@ -31,12 +31,16 @@ export default function ConfirmPage() {
       }
 
       const supabase = createClient();
-      const { error } = await supabase.auth.setSession({
+      const { data, error } = await supabase.auth.setSession({
         access_token,
         refresh_token,
       });
 
+      console.log("setSession result:", { data, error });
+      console.log("type:", type);
+
       if (error) {
+        console.error("setSession error:", error.message, error.status);
         setStatus("error");
         return;
       }
